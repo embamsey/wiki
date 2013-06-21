@@ -56,7 +56,6 @@ class auth_plugin_authldap extends DokuWiki_Auth_Plugin {
         // reject empty password
         if(empty($pass)) return false;
         if(!$this->_openLDAP()) return false;
-
         // indirect user bind
         if($this->getConf('binddn') && $this->getConf('bindpw')) {
             // use superuser credentials
@@ -66,7 +65,7 @@ class auth_plugin_authldap extends DokuWiki_Auth_Plugin {
             }
             $this->bound = 2;
         } else if($this->getConf('binddn') &&
-            $this->getConf('usertree') &&
+            ($this->getConf('susertree') || $this->getConf('eusertree')) &&
             $this->getConf('userfilter')
         ) {
             // special bind string
@@ -75,10 +74,10 @@ class auth_plugin_authldap extends DokuWiki_Auth_Plugin {
                 array('user'=> $user, 'server'=> $this->getConf('server'))
             );
 
-        } else if(strpos($this->getConf('usertree'), '%{user}')) {
+        } else if(strpos(($this->getConf('susertree') || $this->getConf('eusertree')), '%{user}')) {
             // direct user bind
             $dn = $this->_makeFilter(
-                $this->getConf('usertree'),
+                ($this->getConf('susertree') || $this->getConf('eusertree')),
                 array('user'=> $user, 'server'=> $this->getConf('server'))
             );
 
@@ -175,7 +174,7 @@ class auth_plugin_authldap extends DokuWiki_Auth_Plugin {
         $info['server'] = $this->getConf('server');
 
         //get info for given user
-        $base = $this->_makeFilter($this->getConf('usertree'), $info);
+        $base = $this->_makeFilter(($this->getConf('susertree') || $this->getConf('eusertree')), $info);
         if($this->getConf('userfilter')) {
             $filter = $this->_makeFilter($this->getConf('userfilter'), $info);
         } else {
@@ -282,7 +281,7 @@ class auth_plugin_authldap extends DokuWiki_Auth_Plugin {
             } else {
                 $all_filter = "(ObjectClass=*)";
             }
-            $sr          = ldap_search($this->con, $this->getConf('usertree'), $all_filter);
+            $sr          = ldap_search($this->con, ($this->getConf('susertree') || $this->getConf('eusertree')), $all_filter);
             $entries     = ldap_get_entries($this->con, $sr);
             $users_array = array();
             for($i = 0; $i < $entries["count"]; $i++) {
